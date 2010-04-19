@@ -15,3 +15,5 @@ all: $(TARGETS)
 $(EBIN_DIR)/%.beam: $(SRC_DIR)/%.erl
 	erlc $(ERLC_OPTS) -pa $(EBIN_DIR) $<
 
+clean:
+	cd ebin; rm *.beam; cd ..
