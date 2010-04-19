@@ -4,11 +4,6 @@
 
 -include("thor.hrl").
 
--record(conn, {sock,
-               port,
-               peer_addr,
-               peer_port}).
-
 -define(server_idle_timeout, 30*1000).
 
 %% common HTTP responses
@@ -115,21 +110,15 @@ body(Connection, Request) ->
                 {ok, Bin} ->
                     Close = handle_post(Connection, Request#req{body = Bin}),
                     io:format("~p handled post~n", [self()]),
-                    %gen_tcp:close(Connection#conn.sock);
-                    case Close of 
-                        close ->
-                            gen_tcp:close(Connection#conn.sock);
-                        keep_alive ->
-                            io:format("~p is keep alive~n", [self()]),
-                            case inet:setopts(Connection#conn.sock, [{packet, http}]) of
-                                ok ->
-                                    io:format("~p ok setting ops~n", [self()]);
-                                {error, Reason} ->
-                                    io:format("~p error setting ops ~p~n", [self(), Reason])
-                            end,
-                            io:format("~p is restarting request~n", [self()]),
-                            request(Connection, #req{})
-                     end;
+                    gen_tcp:close(Connection#conn.sock);
+                    %case Close of 
+                    %    close ->
+                    %        gen_tcp:close(Connection#conn.sock);
+                    %    keep_alive ->
+                    %        io:format("~p is keep alive~n", [self()]),
+                    %        inet:setopts(Connection#conn.sock, [{packet, http}]), 
+                    %        request(Connection, #req{})
+                    % end;
                 _Other ->
                     exit(normal)
             end;
@@ -182,7 +171,7 @@ handle_post(Connection, #req{connection = Conn} = Req) ->
 call_mfa(F, A, Connection, Request) ->
     case thor_router:get_route_handler(Connection#conn.port, Request#req.method, F) of
         {ok, Mod, Func} ->
-            case catch Mod:Func(Connection, Request, A) of
+            case catch Mod:Func(Connection, Request) of
                 {'EXIT', Reason} ->
                     io:format("Worked crashed with reason ~p~n", [Reason]),
                     exit(normal);
@@ -192,8 +181,7 @@ call_mfa(F, A, Connection, Request) ->
                     Res = [<<"HTTP/1.1 200 OK \r\n">>,
                            EncodedHeaders,
                            <<"\r\n\r\n">>,
-                           Body,
-                           <<"\r\n">>],
+                           Body],
                     send(Connection, Res)
             end;
         {error, not_found} ->

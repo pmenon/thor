@@ -18,7 +18,7 @@ start_link(Port) when is_integer(Port) ->
     gen_server:start_link({local, Name}, ?MODULE, Port, []).
 
 create(ServerPid, Pid) ->
-    gen_server:cast(ServerPid, {create, Pid}).
+    gen_server:cast(ServerPid, {create}).
 
 %% Gen Server init callback
 init(Port) ->
@@ -45,7 +45,7 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({create, Pid}, #state{listen_socket = ListenSocket} = State) ->
+handle_cast({create}, #state{listen_socket = ListenSocket} = State) ->
     NewPid = thor_socket:start_link(self(), ListenSocket, State#state.port),
     {noreply, State#state{acceptor_pid = NewPid}};
 

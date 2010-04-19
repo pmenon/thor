@@ -4,4 +4,4 @@
 
 get_route_handler(Port, Method, Path) ->
     io:format("getting router for path = ~p~n", [Path]),
-    {ok, thor_channel_server, do_something}.
+    {ok, thor_web, handle_request}.

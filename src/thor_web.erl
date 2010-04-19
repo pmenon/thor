@@ -1,46 +1,72 @@
 -module(thor_web).
 
--export([do_loop/2]).
+-include("thor.hrl").
+
+-export([handle_request/2]).
 
 -define(COMET_TIMEOUT, 30*1000).
 
 %%--------------------------------------------------------------------
-%% Function: do_loop(Connection, Request)
+%% Function: create_channel(Connection, Request)
 %% Description: Creates a bank account for the person with name Name
 %%--------------------------------------------------------------------
-do_loop(Connection, Request) ->
-    io:format("~p handling request for path ~p~n", [self(), Request#req.uri]),
-    Headers = ["Server: Thor"],
-    Body = binary_to_list(Request#req.body),
-    case Request#req.uri of
-        {abs_path, "/create"} ->
-            thor_channel_server:create_channel(Body),
-            Reply = {200, Headers, <<"created channel">>};
-        {abs_path, "/send"} ->
-            {User, Message} = get_data(Body),
-            JsonMsg = {struct, [ {from, User}, {msg, Message} ]},
-            thor_channel_server:deliver_to_channel(User, {chat_msg, JsonMsg}),
-            Reply = {200, Headers, <<"Message sent!\r\n\r\n">>};
-        {abs_path, "/get"} ->
-            Msg = {add_listener, self()},
-            {User, Message} = get_data(Body),
-            thor_channel_server:deliver_to_channel(User, Msg),
-            timer:apply_after(30000, ?MODULE, timeout, []),
-            proc_lib:hibernate(?MODULE, handle_msgs, []);
-            %receive
-            %    Stuff ->
-            %        RemoveMsg = {remove_listener, self()},
-            %        thor_channel_server:deliver_to_channel(User, RemoveMsg),
-            %        io:format("messages : ~p~n", [Stuff]),
-            %        Reply = {200, Headers, list_to_binary(thor_json:encode({array, Stuff}))}
-            %after 30000 ->
-            %    RemoveMsg = {remove_listener, self()},
-            %    thor_channel_server:deliver_to_channel(User, RemoveMsg),
-            %    io:format("timeout~n", []),
-            %    Reply = {200, Headers, <<"timed out, try again">>}
-            %end;
-        _ ->            
-            Body = <<"<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n",
+
+handle_request(Connection, "/thor/get_messages", #req{body = Body} = Request) ->
+    Headers = ["Server: Thor Web Server!"],
+    {User, Message} = get_data(binary_to_list(Body)),
+    Response = thor_api:wait_for_messages(User),
+    HttpResp = case Response of
+        Messages when is_list(Messages) ->
+            {200, Headers, list_to_binary(thor_json:encode( {array, Messages} ))};
+        timeout ->
+            {200, Headers, list_to_binary(thor_json:encode({struct, [ {response, "success"}]}))}; 
+        _ ->
+            {500, Headers, <<"Error on the server">>}
+    end,
+    HttpResp;
+
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+handle_request(Connection, "/thor/login", #req{body = Body} = Request) ->
+    Headers = ["Server: Thor Web Server!"],
+    {User, Message} = get_data(binary_to_list(Body)),
+    thor_api:user_login(User),
+    JsonResponse = {struct, [ {response, "success"} ]},
+    {200, Headers, list_to_binary(thor_json:encode(JsonResponse))};
+
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+handle_request(Connection, "/thor/logout", #req{body = Body} = Request) ->
+    Headers = ["Server: Thor Web Server!"],
+    {User, Message} = get_data(binary_to_list(Body)),
+    thor_api:user_logout(User),
+    JsonResponse = {struct, [ {response, "success"} ]},
+    {200, Headers, list_to_binary(thor_json:encode(JsonResponse))};
+
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+handle_request(Connection, "/thor/send_message", #req{body = Body} = Request) ->
+    Headers = ["Server: Thor Web Server!"],
+    {User, MsgTxt} = get_data(binary_to_list(Body)),
+    JsonMsg = {struct, [ {from, User}, {msg, MsgTxt} ]},
+    thor_api:send_message(User, JsonMsg),
+    JsonResponse = {struct, [ {response, "success"} ]},
+    {200, Headers, list_to_binary(thor_json:encode(JsonResponse))};
+
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+handle_request(Connection, _Path, Request) ->
+    %% unsupported operation
+    Headers = ["Server: Thor Web Server!"],
+    Response = <<"<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n",
              "<html>\n",
              "    <head>\n",
              "        <title>Welcome to Thor!</title>\n",
@@ -49,31 +75,24 @@ do_loop(Connection, Request) ->
              "        Hello, World!\n",
              "    </body>\n",
              "</html>\n">>,
-             Reply = {200, Headers, Body}
-    end,
-    Reply.
+    {200, Headers, Response}.
 
-handle_request(Connection, "/thor/get", Request) ->
-    {User, Message} = get_data(Body),
-    thor_channel_server:deliver_to_channel( User, { add_listener, self() } ),
-    timer:apply_after(?COMET_TIMEOUT, ?MODULE, timeout, []),
-    proc_lib:hibernate(?MODULE, handle_msgs, []);
-
-handle_request(Connection, _Path, Request) ->
-    %% unsupported operation
-
-finish_wait() ->
-    thor_channel_server:deliver_to_channel(User, {remove_listener, self()}),
-    
-wait(Connection) ->
-    receive
-        timeout ->
-            io:format("~p received timeout message, please try again later~n", [self()]);
-        Msgs when is_list(Msgs) ->
-            io:format("~p received new messages : ~p~n", [self(), Msgs])
-    end.
-
-timeout_wait(Pid) ->
-    Pid ! timeout.
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+handle_request(Connection, Request) ->
+    io:format("~p handling request for path ~p~n", [self(), Request#req.uri]),
+    {PathType, Path} = Request#req.uri,
+    handle_request(Connection, Path, Request).
 
 
+get_data(Data) ->
+    get_data(Data, []).
+
+get_data([$:|T], Acc) ->
+    {lists:reverse(Acc), T};
+get_data([H|T], Acc) ->
+    get_data(T, [H|Acc]);
+get_data([], Acc) ->
+    {lists:reverse(Acc), []}.
