@@ -69,6 +69,7 @@ headers(Connection, Request, Headers) ->
             KeepAlive = keep_alive(Request#req.vsn, Val),
             headers(Connection, Request#req{connection = KeepAlive}, [{'Connection', Val}|Headers]);
         {ok, {http_header, _, Header, _, Val}} ->
+            io:format("Header = ~p, Value = ~p~n", [Header, Val]),
             headers(Connection, Request, [{Header, Val}|Headers]);
         {error, {http_error, "\r\n"}} ->
             headers(Connection, Request, Headers);
@@ -110,15 +111,15 @@ body(Connection, Request) ->
                 {ok, Bin} ->
                     Close = handle_post(Connection, Request#req{body = Bin}),
                     io:format("~p handled post~n", [self()]),
-                    gen_tcp:close(Connection#conn.sock);
-                    %case Close of 
-                    %    close ->
-                    %        gen_tcp:close(Connection#conn.sock);
-                    %    keep_alive ->
-                    %        io:format("~p is keep alive~n", [self()]),
-                    %        inet:setopts(Connection#conn.sock, [{packet, http}]), 
-                    %        request(Connection, #req{})
-                    % end;
+                    %gen_tcp:close(Connection#conn.sock);
+                    case Close of 
+                        close ->
+                            gen_tcp:close(Connection#conn.sock);
+                        keep_alive ->
+                            io:format("~p is keep alive~n", [self()]),
+                            inet:setopts(Connection#conn.sock, [{packet, http}]), 
+                            request(Connection, #req{})
+                    end;
                 _Other ->
                     exit(normal)
             end;

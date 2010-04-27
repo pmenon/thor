@@ -49,11 +49,11 @@ handle_call(_Request, _From, State) ->
 handle_cast({create_channel, ChannelName}, #state{channel_map = ChannelMap} = State) ->
     NewChannelMap = case dict:find(ChannelName, ChannelMap) of
         {ok, Channel} ->
-            io:format("Channel already exists for name ~p at ~p~n", [ChannelName, Channel]),
+            io:format("ChannelServer: Channel already exists for name ~p at ~p~n", [ChannelName, Channel]),
             ChannelMap;
         _ ->
             ChannelPid = thor_channel:new_channel(),
-            io:format("Creating new channel with name: ~p on ~p~n", [ChannelName, ChannelPid]),
+            io:format("ChannelServer: Creating new channel with name: ~p on ~p~n", [ChannelName, ChannelPid]),
             dict:store(ChannelName, ChannelPid, State#state.channel_map)
     end,
     {noreply, State#state{channel_map = NewChannelMap}};
@@ -62,10 +62,10 @@ handle_cast({deliver_msg, ChannelName, Msg}, #state{channel_map = ChannelMap} = 
     case dict:find(ChannelName, ChannelMap) of
         {ok, Channel} ->
             %% send to channel
-            io:format("sending message ~p to user ~p on channel ~p~n", [Msg, ChannelName, Channel]),
+            io:format("ChannelServer: Sending message ~p to user ~p on channel ~p~n", [Msg, ChannelName, Channel]),
             Channel ! {msg, Msg};
         _ ->
-            io:format("no channel for user ~p exists ~n", [ChannelName])
+            io:format("ChannelServer: No channel for user ~p exists ~n", [ChannelName])
     end,
     {noreply, State};
 

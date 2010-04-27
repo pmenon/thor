@@ -32,8 +32,9 @@ handle_request(Connection, "/thor/get_messages", #req{body = Body} = Request) ->
 handle_request(Connection, "/thor/login", #req{body = Body} = Request) ->
     Headers = ["Server: Thor Web Server!"],
     {User, Message} = get_data(binary_to_list(Body)),
+    io:format("Body = ~p, User = ~p, Message = ~p~n", [binary_to_list(Body), User, Message]),
     thor_api:user_login(User),
-    JsonResponse = {struct, [ {response, "success"} ]},
+    JsonResponse = {struct, [ {response, User} ]},
     {200, Headers, list_to_binary(thor_json:encode(JsonResponse))};
 
 %%--------------------------------------------------------------------

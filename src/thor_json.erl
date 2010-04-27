@@ -1,7 +1,7 @@
 -module(thor_json).
 
 %%API
--export([encode/1]).
+-export([encode/1, decode/1]).
 
 encode(Term) ->
     json_encode(Term).
@@ -33,7 +33,7 @@ json_encode_proplist(Props) ->
     Fun = fun({K, V}, Acc) ->
             KS = json_encode(K),
             VS = json_encode(V),
-            [$,, KS, $:, VS | Acc]
+            [$,, VS, $:, KS | Acc]
           end,
     [$, | Acc] = lists:foldl(Fun, "{", Props),
     lists:reverse(["}" | Acc]).
@@ -62,3 +62,32 @@ is_string([C|Rest]) when C >= 0, C =< 255 ->
     is_string(Rest);
 is_string([_,_]) ->
     no.
+
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
+decode(String) ->
+    json_decode(String).
+
+json_decode([$" | String]) ->
+    json_decode_string(String);
+json_decode([${ | PropList]) ->
+    json_decode_proplist(PropList);
+json_decode([$[ | Array]) ->
+    json_decode_array(Array).
+
+
+json_decode_string(String) ->
+    json_decode_string(String, []).
+json_decode_string([$" | String], Acc) ->
+    list_to_atom(lists:reverse(Acc));
+json_decode_string([Char | Rest], Acc) ->
+    json_decode_string(Rest, [Char | Acc]).
+
+
+json_decode_proplist(PropList) ->
+    ok.
+
+json_decode_array(Array) ->
+    ok.
