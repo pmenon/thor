@@ -5,6 +5,7 @@
 -export([handle_request/2]).
 
 -define(COMET_TIMEOUT, 30*1000).
+-define(USER_KEY, "user").
 
 %%--------------------------------------------------------------------
 %% Function: create_channel(Connection, Request)
@@ -54,9 +55,11 @@ handle_request(Connection, "/thor/logout", #req{body = Body} = Request) ->
 %%--------------------------------------------------------------------
 handle_request(Connection, "/thor/send_message", #req{body = Body} = Request) ->
     Headers = ["Server: Thor Web Server!"],
-    {User, MsgTxt} = get_data(binary_to_list(Body)),
-    JsonMsg = {struct, [ {from, User}, {msg, MsgTxt} ]},
-    thor_api:send_message(User, JsonMsg),
+    %%{User, MsgTxt} = get_data(binary_to_list(Body)),
+    %%JsonMsg = {struct, [ {from, User}, {msg, MsgTxt} ]},
+    {JsonObj, Rest} = thor_json:decode(binary_to_list(Body)),
+    User = thor_json:get_attribute(JsonObj, ?USER_KEY),
+    thor_api:send_message(User, JsonObj),
     JsonResponse = {struct, [ {response, "success"} ]},
     {200, Headers, list_to_binary(thor_json:encode(JsonResponse))};
 

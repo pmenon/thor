@@ -1,7 +1,7 @@
 -module(thor_json).
 
 %%API
--export([encode/1, decode/1]).
+-export([encode/1, decode/1, get_attribute/2]).
 
 encode(Term) ->
     json_encode(Term).
@@ -83,7 +83,8 @@ json_decode([$[ | Array]) ->
 json_decode_string(String) ->
     json_decode_string(String, []).
 json_decode_string([$" | String], Acc) ->
-    {list_to_atom(lists:reverse(Acc)), String};
+    %%{list_to_atom(lists:reverse(Acc)), String};
+    {lists:reverse(Acc), String};
 json_decode_string([Char | Rest], Acc) ->
     json_decode_string(Rest, [Char | Acc]).
 
@@ -115,3 +116,11 @@ skipws([C | Rest]) when C =< 32 ->
     skipws(Rest);
 skipws(String) ->
     String.
+
+get_attribute({struct, Props}, Key) ->
+    case lists:keysearch(Key, 1, Props) of
+        {value, {_Key, Val}} ->
+            Val;
+        _ ->
+            not_found
+    end.

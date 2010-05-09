@@ -69,7 +69,6 @@ headers(Connection, Request, Headers) ->
             KeepAlive = keep_alive(Request#req.vsn, Val),
             headers(Connection, Request#req{connection = KeepAlive}, [{'Connection', Val}|Headers]);
         {ok, {http_header, _, Header, _, Val}} ->
-            io:format("Header = ~p, Value = ~p~n", [Header, Val]),
             headers(Connection, Request, [{Header, Val}|Headers]);
         {error, {http_error, "\r\n"}} ->
             headers(Connection, Request, Headers);
