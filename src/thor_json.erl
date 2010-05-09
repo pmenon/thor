@@ -73,21 +73,40 @@ decode(String) ->
 json_decode([$" | String]) ->
     json_decode_string(String);
 json_decode([${ | PropList]) ->
-    json_decode_proplist(PropList);
+    {Struct, Rest} = json_decode_proplist(PropList),
+    {{struct, Struct}, Rest};
 json_decode([$[ | Array]) ->
-    json_decode_array(Array).
+    {Arr, Rest} = json_decode_array(Array),
+    {{array, Arr}, Rest}.
 
 
 json_decode_string(String) ->
     json_decode_string(String, []).
 json_decode_string([$" | String], Acc) ->
-    list_to_atom(lists:reverse(Acc));
+    {list_to_atom(lists:reverse(Acc)), String};
 json_decode_string([Char | Rest], Acc) ->
     json_decode_string(Rest, [Char | Acc]).
 
-
 json_decode_proplist(PropList) ->
-    ok.
+    json_decode_proplist(PropList, []).
+
+json_decode_proplist([$" | Rest], Acc) ->
+    {Key, Rest2} = json_decode_string(Rest),
+    [$: | Rest3] = Rest2,
+    {Value, Rest4} = json_decode(Rest3),
+    json_decode_proplist(Rest4, [{Key, Value} | Acc]);
+json_decode_proplist([$, | Rest], Acc) ->
+    json_decode_proplist(Rest, Acc);
+json_decode_proplist([$} | Rest], Acc) ->
+    {Acc, Rest}.
 
 json_decode_array(Array) ->
-    ok.
+    json_decode_array(Array, []).
+
+json_decode_array([$, | Rest], Acc) ->
+    json_decode_array(Rest, Acc);
+json_decode_array([$] | Rest], Acc) ->
+    {Acc, Rest};
+json_decode_array(Rest, Acc) ->
+    {Element, Rest1} = json_decode(Rest),
+    json_decode_array(Rest1, [Element | Acc]).
