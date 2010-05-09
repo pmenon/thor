@@ -73,10 +73,10 @@ decode(String) ->
 json_decode([$" | String]) ->
     json_decode_string(String);
 json_decode([${ | PropList]) ->
-    {Struct, Rest} = json_decode_proplist(PropList),
+    {Struct, Rest} = json_decode_proplist(skipws(PropList)),
     {{struct, Struct}, Rest};
 json_decode([$[ | Array]) ->
-    {Arr, Rest} = json_decode_array(Array),
+    {Arr, Rest} = json_decode_array(skipws(Array)),
     {{array, Arr}, Rest}.
 
 
@@ -92,11 +92,11 @@ json_decode_proplist(PropList) ->
 
 json_decode_proplist([$" | Rest], Acc) ->
     {Key, Rest2} = json_decode_string(Rest),
-    [$: | Rest3] = Rest2,
-    {Value, Rest4} = json_decode(Rest3),
-    json_decode_proplist(Rest4, [{Key, Value} | Acc]);
+    [$: | Rest3] = skipws(Rest2),
+    {Value, Rest4} = json_decode(skipws(Rest3)),
+    json_decode_proplist(skipws(Rest4), [{Key, Value} | Acc]);
 json_decode_proplist([$, | Rest], Acc) ->
-    json_decode_proplist(Rest, Acc);
+    json_decode_proplist(skipws(Rest), Acc);
 json_decode_proplist([$} | Rest], Acc) ->
     {Acc, Rest}.
 
@@ -104,9 +104,14 @@ json_decode_array(Array) ->
     json_decode_array(Array, []).
 
 json_decode_array([$, | Rest], Acc) ->
-    json_decode_array(Rest, Acc);
+    json_decode_array(skipws(Rest), Acc);
 json_decode_array([$] | Rest], Acc) ->
     {Acc, Rest};
 json_decode_array(Rest, Acc) ->
-    {Element, Rest1} = json_decode(Rest),
-    json_decode_array(Rest1, [Element | Acc]).
+    {Element, Rest1} = json_decode(skipws(Rest)),
+    json_decode_array(skipws(Rest1), [Element | Acc]).
+
+skipws([C | Rest]) when C =< 32 ->
+    skipws(Rest);
+skipws(String) ->
+    String.
