@@ -69,6 +69,7 @@ headers(Connection, Request, Headers) ->
             KeepAlive = keep_alive(Request#req.vsn, Val),
             headers(Connection, Request#req{connection = KeepAlive}, [{'Connection', Val}|Headers]);
         {ok, {http_header, _, Header, _, Val}} ->
+            io:format("~p: ~p~n", [Header, Val]),
             headers(Connection, Request, [{Header, Val}|Headers]);
         {error, {http_error, "\r\n"}} ->
             headers(Connection, Request, Headers);
@@ -94,37 +95,33 @@ keep_alive(Vsn, KA) ->
 
 %% Reads the HTTP Content/Body from the request
 body(Connection, Request) ->
-    case Request#req.method of 
+    Body = case Request#req.method of 
         'GET' ->
-            Close = handle_get(Connection, Request),
-            case Close of
-                close ->
-                    gen_tcp:close(Connection#conn.sock);
-                keep_alive ->
-                    inet:set_opts(Connection#conn.sock, [{packet, http}]),
-                    request(Connection, #req{})
-            end;
+            <<"">>;    
         'POST' when is_integer(Request#req.content_length) ->
             inet:setopts(Connection#conn.sock, [{packet, raw}]),
             case gen_tcp:recv(Connection#conn.sock, Request#req.content_length, 60000) of
                 {ok, Bin} ->
-                    Close = handle_post(Connection, Request#req{body = Bin}),
-                    io:format("~p handled post~n", [self()]),
-                    %gen_tcp:close(Connection#conn.sock);
-                    case Close of 
-                        close ->
-                            gen_tcp:close(Connection#conn.sock);
-                        keep_alive ->
-                            io:format("~p is keep alive~n", [self()]),
-                            inet:setopts(Connection#conn.sock, [{packet, http}]), 
-                            request(Connection, #req{})
-                    end;
+                    Bin;
                 _Other ->
                     exit(normal)
             end;
         _Other ->
             send(Connection, ?not_implemented_501),
             exit(normal)
+    end,
+    Close = case Request#req.method of
+        'GET' ->
+            handle_get(Connection, Request#req{body = Body});
+        'POST' ->
+            handle_post(Connection, Request#req{body = Body})
+    end,
+    case Close of
+        close ->
+            gen_tcp:close(Connection#conn.sock);
+        keep_alive ->
+            inet:setopts(Connection#conn.sock, [{packet, http}]),
+            request(Connection, #req{})
     end.
 
 handle_get(Connection, #req{connection = Conn} = Req) ->
@@ -152,7 +149,6 @@ handle_post(Connection, #req{connection = Conn} = Req) ->
     case Req#req.uri of
         {abs_path, Path} ->
             call_mfa(Path, Req#req.body, Connection, Req),
-            io:format("~p return from dispatch~n", [self()]),
             Conn;
         {absoluteURI, http, _Host, _, Path} ->
             call_mfa(Path, Req#req.body, Connection, Req),
@@ -182,7 +178,9 @@ call_mfa(F, A, Connection, Request) ->
                            EncodedHeaders,
                            <<"\r\n\r\n">>,
                            Body],
-                    send(Connection, Res)
+                    send(Connection, Res);
+                _ ->
+                    io:format("sdfsdfsd~n", [])
             end;
         {error, not_found} ->
             send(Connection, ?not_found_404)

@@ -11,7 +11,7 @@
 -record(req, {connection = keep_alive,      %% keep_alive or close
               content_length,               %% integer  
               vsn,                          %% {Major, Minor}
-              method,                       %% 'GE:bT' or 'POST'
+              method,                       %% 'GET' or 'POST'
               uri,                          %% Truncated URI '/index.html'
               args="",                      %% Part of the URI after the '?'
               headers,                      %% {Key, Value} HTTP headers

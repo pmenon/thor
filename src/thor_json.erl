@@ -122,5 +122,7 @@ get_attribute({struct, Props}, Key) ->
         {value, {_Key, Val}} ->
             Val;
         _ ->
-            not_found
-    end.
+            undefined 
+    end;
+get_attribute(_, Key) ->
+    undefined.

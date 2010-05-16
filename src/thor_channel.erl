@@ -98,7 +98,7 @@ try_notify(#state{delivered_msgs = DMsgs, pending_msgs = PMsgs, listener_pids = 
                     %% found listeners, deliver messages and move to delivered
                     lists:map(fun(Pid) ->
                         io:format("sending message ~p to listener ~p~n", [PMsgs, Pid]),
-                        Pid ! PMsgs
+                        Pid ! {msgs, PMsgs}
                     end, 
                     Listeners),
                     NewDelivered = lists:append(DMsgs, PMsgs),

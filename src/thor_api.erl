@@ -6,6 +6,8 @@
          get_messages/1, 
          wait_for_messages/1,
          wait_for_messages/2,
+         add_observer/2,
+         remove_observer/2,
          user_logout/1]).
 
 -define(DEFAULT_TIMEOUT, 30*1000).
@@ -46,9 +48,9 @@ wait_for_messages(UserId, Timeout) ->
     ReqPid = self(),
     thor_channel_server:deliver_to_channel(UserId, {add_listener, ReqPid}),
     Response = receive
-        Messages when is_list(Messages) ->
+        {msgs, Messages} when is_list(Messages) ->
             io:format("~p for messages from channel ~p~n", [ReqPid, Messages]),
-            Messages;
+            {msgs, Messages};
         _ ->
             io:format("~p not sure what it got~n", [ReqPid]),
             {error, bad_data_returned}
@@ -59,6 +61,12 @@ wait_for_messages(UserId, Timeout) ->
     end,
     thor_channel_server:deliver_to_channel(UserId, {remove_listener, ReqPid}),
     Response.
+
+add_observer(UserId, ObserverPid) ->
+    thor_channel_server:deliver_to_channel(UserId, {add_listener, ObserverPid}).
+
+remove_observer(UserId, ObserverPid) ->
+    thor_channel_server:deliver_to_channel(UserId, {remove_listener, ObserverPid}).
 
 %%--------------------------------------------------------------------
 %% Function: create_channel(Connection, Request)

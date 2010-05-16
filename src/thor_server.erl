@@ -23,7 +23,7 @@ create(ServerPid, Pid) ->
 %% Gen Server init callback
 init(Port) ->
     io:format("Attempting to listen on port ~w~n", [Port]),
-    %process_flag(trap_exit, true),
+    %%process_flag(trap_exit, true),
     case gen_tcp:listen(Port, [binary, {packet, http},
                                 {reuseaddr, true},
                                 {active, false},
