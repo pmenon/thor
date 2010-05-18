@@ -112,7 +112,6 @@ websocket_handler(WebSocket) ->
     end.
 
 websocket_handler0(WebSocket, User) ->
-    io:format("Waiting for actively for message~n", []),
     receive
         {tcp, WebSocket, FramedData} ->
             Data = thor_websockets:unpack(FramedData),

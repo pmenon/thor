@@ -5,6 +5,7 @@
 -include("thor.hrl").
 
 -define(server_idle_timeout, 30*1000).
+-define(keep_alive_timeout, 5*1000).
 
 %% common HTTP responses
 -define(not_implemented_501, "HTTP/1.1 501 Not Implemented\r\n\r\n").
@@ -45,7 +46,7 @@ init({ListenPid, ListenSocket, ListenPort}) ->
 %% Reads the HTTP Request Line
 request(Connection, Request) ->
     io:format("~p reading new request~n", [self()]),
-    case gen_tcp:recv(Connection#conn.sock, 0, 30000) of
+    case gen_tcp:recv(Connection#conn.sock, 0, ?keep_alive_timeout) of
         {ok, {http_request, Method, Path, Version}} ->
             %% Proceed to read the HTTP headers
             headers(Connection, Request#req{vsn = Version,
@@ -55,9 +56,11 @@ request(Connection, Request) ->
             request(Connection, Request);
         {error, {http_error, "\n"}} ->
             request(Connection, Request);
-        _Other ->
+        Reason ->
+            io:format("~p quitting while waiting: ~p~n", [self(), Reason]),
             exit(normal)
-    end.
+    end,
+    io:format("~p timed out waiting for http request~n", [self()]).
 
 %% Reads the HTTP Headers from the request
 headers(Connection, Request, Headers) ->
@@ -69,7 +72,6 @@ headers(Connection, Request, Headers) ->
             KeepAlive = keep_alive(Request#req.vsn, Val),
             headers(Connection, Request#req{connection = KeepAlive}, [{'Connection', Val}|Headers]);
         {ok, {http_header, _, Header, _, Val}} ->
-            io:format("~p: ~p~n", [Header, Val]),
             headers(Connection, Request, [{Header, Val}|Headers]);
         {error, {http_error, "\r\n"}} ->
             headers(Connection, Request, Headers);
@@ -95,6 +97,7 @@ keep_alive(Vsn, KA) ->
 
 %% Reads the HTTP Content/Body from the request
 body(Connection, Request) ->
+    io:format("Headers = ~p~n", [Request#req.headers]),
     Body = case Request#req.method of 
         'GET' ->
             <<"">>;    
@@ -118,8 +121,10 @@ body(Connection, Request) ->
     end,
     case Close of
         close ->
+            io:format("close~n", []),
             gen_tcp:close(Connection#conn.sock);
         keep_alive ->
+            io:format("keep alive~n", []),
             inet:setopts(Connection#conn.sock, [{packet, http}]),
             request(Connection, #req{})
     end.

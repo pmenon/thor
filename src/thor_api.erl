@@ -62,9 +62,17 @@ wait_for_messages(UserId, Timeout) ->
     thor_channel_server:deliver_to_channel(UserId, {remove_listener, ReqPid}),
     Response.
 
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
 add_observer(UserId, ObserverPid) ->
     thor_channel_server:deliver_to_channel(UserId, {add_listener, ObserverPid}).
 
+%%--------------------------------------------------------------------
+%% Function: create_channel(Connection, Request)
+%% Description: Creates a bank account for the person with name Name
+%%--------------------------------------------------------------------
 remove_observer(UserId, ObserverPid) ->
     thor_channel_server:deliver_to_channel(UserId, {remove_listener, ObserverPid}).
 
