@@ -11,15 +11,15 @@ ok(ResponseHeaders, Body) ->
 get_header_val(Headers, HeaderName) when is_list(Headers) ->
     HeaderName0 = string:to_lower(HeaderName),
     lists:foldl(fun({K, V}, undefined) ->
-                   K0 = case is_atom(K) of
+                    K0 = case is_atom(K) of
                             true -> atom_to_list(K);
                             false -> K
-                   end,
-                   case string:to_lower(K0) of
-                       HeaderName0 -> V;
-                       _ -> undefined
-                   end;
-               (_Header, Acc) ->
-                   Acc
-               end, undefined, Headers).
+                    end,
+                    case string:to_lower(K0) of
+                        HeaderName0 -> V;
+                        _ -> undefined
+                    end;
+                (_Header, Acc) ->
+                    Acc
+                end, undefined, Headers).
     

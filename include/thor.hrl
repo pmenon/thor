@@ -1,3 +1,11 @@
+-define(DEFAULT_LOGGER, default_logger).
+
+-record(log, {level,                     %% The logging level
+              msg,                       %% The log message
+              time,                      %% The logging date
+              millis }).                 %% The milliseconds
+
+
 -record(server_conf, { name,               %% The name that is assigned to this server
                        port,               %% The port this server is listening on
                        callback            %% The callback module that is run on a new request
@@ -22,5 +30,4 @@
                   msg_txt,     %% The contents of the message
                   timestamp,   %% The timestamp of the message
                   seq_no }).   %% The sequence number of the message
-
 
