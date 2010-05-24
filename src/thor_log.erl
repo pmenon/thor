@@ -37,7 +37,7 @@ error(Logger, LogMsg) ->
 log(Logger, Level, LogMsg) ->
     Time = calendar:local_time(),
     {_, _, Millis} = erlang:now(),
-    notify(Logger, {log, #log{level= Level, msg = LogMsg, time = Time, millis = Millis}}).
+    notify(Logger, {log, #log{level= Level, pid = self(), msg = LogMsg, time = Time, millis = Millis}}).
 
 add_appender(Logger, {LogModule, LogName}, Conf) ->
     gen_event:add_sup_handler(Logger, {LogModule, LogName}, Conf).

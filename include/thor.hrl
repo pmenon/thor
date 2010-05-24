@@ -1,6 +1,7 @@
 -define(DEFAULT_LOGGER, default_logger).
 
 -record(log, {level,                     %% The logging level
+              pid,                       %% Caller Pid
               msg,                       %% The log message
               time,                      %% The logging date
               millis }).                 %% The milliseconds
