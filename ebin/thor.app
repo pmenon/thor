@@ -7,6 +7,6 @@
                 thor_socket ]},
     {registered, [ thor_sup ]},
 	{applications, [kernel, stdlib]},
-	{mod, {thor, []}},
-	{env, [{conf, "/conf/storage.properties"}]}
+	{mod, {thor, [ "/Users/menonp/development/thor/conf/thor.conf" ]}},
+	{env, [{conf, "/conf/thor.conf"}]}
  ]}.

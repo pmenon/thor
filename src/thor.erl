@@ -11,10 +11,10 @@ start() ->
     io:format("in thor:start/0~n", []),
     application:start(thor).
 
-start(_Type, _StartArgs) ->
+start(_Type, DefaultConfigFile) ->
     print_banner(),
     io:format("Starting Thor ...~n"),
-    case thor_sup:start_link() of 
+    case thor_sup:start_link(DefaultConfigFile) of 
         {ok, Pid} ->
             %%alarm_handler:clear_alarm({application_stopped, thor}),
             {ok, Pid};
