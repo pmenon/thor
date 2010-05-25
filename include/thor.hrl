@@ -1,8 +1,13 @@
 -define(DEFAULT_LOGGER, default_logger).
+-define(LOG_INFO(M,A), thor_log:info(?DEFAULT_LOGGER, atom_to_list(?MODULE) ++ ": " ++ M, A)).
+-define(LOG_DEBUG(M,A), thor_log:debug(?DEFAULT_LOGGER, atom_to_list(?MODULE) ++ ": " ++ M, A)).
+-define(LOG_ERROR(M,A), thor_log:error(?DEFAULT_LOGGER, atom_to_list(?MODULE) ++ ": " ++ M, A)).
+-define(LOG_WARN(M,A), thor_log:warn(?DEFAULT_LOGGER, atom_to_list(?MODULE) ++ ": " ++ M, A)).
 
 -record(log, {level,                     %% The logging level
               pid,                       %% Caller Pid
               msg,                       %% The log message
+              args,                      %% Arguments
               time,                      %% The logging date
               millis }).                 %% The milliseconds
 

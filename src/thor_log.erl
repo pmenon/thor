@@ -3,41 +3,41 @@
 -include("thor.hrl").
 
 -export([start_link/1, add_appender/3]).
--export([debug/1, debug/2, info/1, info/2, warn/1, warn/2, error/1, error/2]).
+-export([debug/2, debug/3, info/2, info/3, warn/2, warn/3, error/2, error/3]).
 
 start_link(Logger) ->
     Res = gen_event:start_link({local, Logger}),
     add_appender(Logger, {thor_console_logger, "Console"}, {}),
     Res.
 
-debug(LogMsg) ->
-    debug(?DEFAULT_LOGGER, LogMsg).
+debug(Logger, Msg) ->
+    debug(Logger, Msg, []).
 
-debug(Logger, LogMsg) ->
-    log(Logger, debug, LogMsg).
+debug(Logger, Msg, Args) ->
+    log(Logger, debug, Msg, Args).
 
-info(LogMsg) ->
-    info(?DEFAULT_LOGGER, LogMsg).
+info(Logger, Msg) ->
+    info(Logger, Msg, []).
 
-info(Logger, LogMsg) ->
-    log(Logger, info, LogMsg).
+info(Logger, Msg, Args) ->
+    log(Logger, info, Msg, Args).
 
-warn(LogMsg) ->
-    warn(?DEFAULT_LOGGER, LogMsg).
+warn(Logger, Msg) ->
+    warn(Logger, Msg, []).
 
-warn(Logger, LogMsg) ->
-    log(Logger, warn, LogMsg).
+warn(Logger, Msg, Args) ->
+    log(Logger, warn, Msg, Args).
 
-error(LogMsg) ->
-    error(?DEFAULT_LOGGER, LogMsg).
+error(Logger, Msg) ->
+    error(Logger, Msg, []).
 
-error(Logger, LogMsg) ->
-    log(Logger, error, LogMsg).
+error(Logger, Msg, Args) ->
+    log(Logger, error, Msg, Args).
 
-log(Logger, Level, LogMsg) ->
+log(Logger, Level, Msg, Args) ->
     Time = calendar:local_time(),
     {_, _, Millis} = erlang:now(),
-    notify(Logger, {log, #log{level= Level, pid = self(), msg = LogMsg, time = Time, millis = Millis}}).
+    notify(Logger, {log, #log{level= Level, pid = self(), msg = Msg, args = Args, time = Time, millis = Millis}}).
 
 add_appender(Logger, {LogModule, LogName}, Conf) ->
     gen_event:add_sup_handler(Logger, {LogModule, LogName}, Conf).

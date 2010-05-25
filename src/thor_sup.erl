@@ -20,5 +20,5 @@ init([]) ->
     Log = {thor_log, {thor_log, start_link, [?DEFAULT_LOGGER]},
             permanent, 2000, worker, [thor_log]},
 
-    {ok, {{one_for_one, 10, 1}, [HttpServer, ChannelServer, Log]}}.
+    {ok, {{one_for_one, 10, 1}, [Log, HttpServer, ChannelServer]}}.
 

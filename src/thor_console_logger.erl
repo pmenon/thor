@@ -14,7 +14,8 @@ init(InitArgs) ->
 handle_event({log, Log}, State) ->
     Time = format_time(Log#log.time),
     Level = string:to_upper(atom_to_list(Log#log.level)),
-    io:format("[~s] [~s] ~p ~s~n", [Time, Level, Log#log.pid, Log#log.msg]),
+    Msg = io_lib:format(Log#log.msg, Log#log.args),
+    io:format("[~s] [~s] ~p ~s", [Time, Level, Log#log.pid, Msg]),
     {ok, State};
 
 handle_event(_Event, State) ->

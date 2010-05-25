@@ -2,6 +2,8 @@
 
 -behaviour(gen_server).
 
+-include("thor.hrl").
+
 %% API
 -export([start_link/1, create/2]).
 
@@ -22,22 +24,21 @@ create(ServerPid, Pid) ->
 
 %% Gen Server init callback
 init(Port) ->
-    io:format("Attempting to listen on port ~w~n", [Port]),
+    ?LOG_INFO("Attempting to listen on port ~w~n", [Port]),
     %%process_flag(trap_exit, true),
     case gen_tcp:listen(Port, [binary, {packet, http},
                                 {reuseaddr, true},
                                 {active, false},
                                 {backlog, 30}]) of
         {ok, ListenSocket} ->
-            io:format("Listening on port ~w~n", [Port]),
+            ?LOG_INFO("Listening on port ~w~n", [Port]),
             %% Create accepting thread
             Pid = thor_socket:start_link(self(), ListenSocket, Port),
-            io:format("Pid = ~p~n", [Pid]),
             {ok, #state{listen_socket = ListenSocket,
                         port = Port,
                         acceptor_pid = Pid}};
         {error, Reason} ->
-            io:format("Error: There was an error listening on port ... ~p~n", [Reason]),
+            ?LOG_ERROR("Error: There was an error listening on port ... ~p~n", [Reason]),
             {stop, Reason}
     end.
 

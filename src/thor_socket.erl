@@ -17,10 +17,12 @@ start_link(ListenPid, ListenSocket, ListenPort) ->
     proc_lib:spawn_link(?MODULE, init, [{ListenPid, ListenSocket, ListenPort}]).
 
 init({ListenPid, ListenSocket, ListenPort}) ->
-    io:format("Spawned thread to accept request on port ~p~n", [ListenPort]),
+    ?LOG_INFO("Spawned thread to accept request on port ~p~n", [ListenPort]),
     case catch gen_tcp:accept(ListenSocket) of
         {ok, Socket} ->
-            io:format("Got a new request, handling it ...~n", []),
+            %%io:format("Got a new request, handling it ...~n", []),
+            ?LOG_INFO("Got a new request, handling it ...~n", []),
+            
             %% tell the listener to spawn a new acceptor while we handle
             %% this incoming request
             thor_server:create(ListenPid, self()),
@@ -45,7 +47,8 @@ init({ListenPid, ListenSocket, ListenPort}) ->
 
 %% Reads the HTTP Request Line
 request(Connection, Request) ->
-    io:format("~p reading new request~n", [self()]),
+    %%io:format("~p reading new request~n", [self()]),
+    ?LOG_INFO("Reading new request ...~n", []),
     case gen_tcp:recv(Connection#conn.sock, 0, ?keep_alive_timeout) of
         {ok, {http_request, Method, Path, Version}} ->
             %% Proceed to read the HTTP headers
@@ -57,10 +60,10 @@ request(Connection, Request) ->
         {error, {http_error, "\n"}} ->
             request(Connection, Request);
         Reason ->
-            io:format("~p quitting while waiting: ~p~n", [self(), Reason]),
+            ?LOG_DEBUG("Quitting while waiting for http headerline ~p~n", [Reason]),
             exit(normal)
     end,
-    io:format("~p timed out waiting for http request~n", [self()]).
+    ?LOG_INFO("timed out waiting for http request", []).
 
 %% Reads the HTTP Headers from the request
 headers(Connection, Request, Headers) ->
@@ -97,7 +100,7 @@ keep_alive(Vsn, KA) ->
 
 %% Reads the HTTP Content/Body from the request
 body(Connection, Request) ->
-    io:format("Headers = ~p~n", [Request#req.headers]),
+    ?LOG_DEBUG("Headers = ~p~n", [Request#req.headers]),
     Body = case Request#req.method of 
         'GET' ->
             <<"">>;    
@@ -121,10 +124,10 @@ body(Connection, Request) ->
     end,
     case Close of
         close ->
-            io:format("close~n", []),
+            ?LOG_DEBUG("Closing connection after handling request ...~n", []),
             gen_tcp:close(Connection#conn.sock);
         keep_alive ->
-            io:format("keep alive~n", []),
+            ?LOG_DEBUG("Keeping connection alive after handling request ...~n", []),
             inet:setopts(Connection#conn.sock, [{packet, http}]),
             request(Connection, #req{})
     end.
@@ -174,7 +177,7 @@ call_mfa(F, A, Connection, Request) ->
         {ok, Mod, Func} ->
             case catch Mod:Func(Connection, Request) of
                 {'EXIT', Reason} ->
-                    io:format("Worked crashed with reason ~p~n", [Reason]),
+                    ?LOG_ERROR("Worked crashed with reason ~p~n", [Reason]),
                     exit(normal);
                 {200, Headers, Body} ->
                     ResHeaders = add_content_length(Headers, Body),
@@ -227,9 +230,9 @@ split_at_q_mark([], Acc) ->
 send(#conn{sock = Sock} = Connection, Data) ->
     case gen_tcp:send(Sock, Data) of
         ok ->
-            io:format("~p sent data okay~n", [self()]),
+            ?LOG_DEBUG("Sent data okay ...~n", []),
             ok;
         _ ->
-            io:format("~p error sending data .. quitting~n", [self()]),
+            ?LOG_WARN("There was an error sending data ... quitting~n", []),
             exit(normal)
     end.
