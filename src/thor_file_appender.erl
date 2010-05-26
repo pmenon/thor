@@ -6,7 +6,8 @@
 
 -export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
 
--record(conf, {format,
+-record(conf, {fd,
+               format,
                dir,
                name,
                suffix,
@@ -19,10 +20,15 @@ init({conf, ConfArgs}) ->
                        end, [], [format, dir, log_name, suffix, rotate, size]),
     init(list_to_tuple(lists:reverse(Args)));
 init({Format, Dir, LogName, LogSuffix, Rotate, Size}) ->
-   {ok, #conf{format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, size = Size}}. 
+    File = Dir ++ "/" ++ LogName ++ "." ++ LogSuffix,
+    io:format("File = ~p~n", [File]),
+    {ok, Fd} = file:open(File, [write, raw, binary]),
+    io:format("opened file~n", []),
+    {ok, #conf{fd = Fd, format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, size = Size}}. 
 
 handle_event({log, Log}, State) ->
     io:format("Logged to file~n", []),
+    file:write(State#conf.fd, Log#log.msg),
     {ok, State};
 
 handle_event(_Event, State) ->
