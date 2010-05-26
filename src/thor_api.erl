@@ -1,5 +1,7 @@
 -module(thor_api).
 
+-include("thor.hrl").
+
 %% Server API
 -export([user_login/1,
          send_message/2, 
@@ -49,14 +51,14 @@ wait_for_messages(UserId, Timeout) ->
     thor_channel_server:deliver_to_channel(UserId, {add_listener, ReqPid}),
     Response = receive
         {msgs, Messages} when is_list(Messages) ->
-            io:format("~p for messages from channel ~p~n", [ReqPid, Messages]),
+            ?LOG_DEBUG("Received messages from channel: ~p~n", [Messages]),
             {msgs, Messages};
         _ ->
-            io:format("~p not sure what it got~n", [ReqPid]),
+            ?LOG_WARN("Received unknown data while waiting for messages~n", []),
             {error, bad_data_returned}
     after 
         Timeout ->
-            io:format("~p timed out while waiting for messages~n", [ReqPid]),
+            ?LOG_INFO("Timed out while waiting for messages~n", []),
             timeout
     end,
     thor_channel_server:deliver_to_channel(UserId, {remove_listener, ReqPid}),

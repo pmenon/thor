@@ -6,10 +6,20 @@
 
 -export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
 
--record(conf, {}).
+-record(conf, {format,
+               dir,
+               name,
+               suffix,
+               rotate,
+               size}).
 
-init(InitArgs) ->
-    {ok, #conf{}}.
+init({conf, ConfArgs}) ->
+    Args = lists:foldl(fun(X, Acc) ->
+                           [proplists:get_value(X, ConfArgs) | Acc]
+                       end, [], [format, dir, log_name, suffix, rotate, size]),
+    init(list_to_tuple(lists:reverse(Args)));
+init({Format, Dir, LogName, LogSuffix, Rotate, Size}) ->
+   {ok, #conf{format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, size = Size}}. 
 
 handle_event({log, Log}, State) ->
     io:format("Logged to file~n", []),

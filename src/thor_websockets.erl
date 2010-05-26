@@ -33,6 +33,7 @@ init(#conn{sock = WebSocket} = Conn, #req{headers = Headers} = Request, Options)
     do_callback(NewOptions#opts.callback, WebSocket).
 
 handshake(WebSocket, Headers, Options) ->
+    ?LOG_INFO("Upgrading HTTP Connection to a WebSocket~n", []),
     case get_origin_header(Headers) of
         undefined ->
             close(WebSocket);
@@ -60,7 +61,7 @@ do_callback(Callback, Args) ->
 
 send_data(WebSocket, Data) ->
     FramedData = [0, Data, 255],
-    io:format("sending data: ~p~n", [FramedData]),
+    ?LOG_DEBUG("Sending websocket data: ~p~n", [FramedData]),
     gen_tcp:send(WebSocket, [0,Data,255]).
 
 get_data(WebSocket) ->

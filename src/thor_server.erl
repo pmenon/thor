@@ -58,12 +58,12 @@ handle_info({'EXIT', Pid, normal}, #state{acceptor_pid = Pid} = State) ->
 
 handle_info({'EXIT', Pid, abnormal}, #state{acceptor_pid = Pid} = State) ->
     timer:sleep(2000),
-    io:format("fail~n", []),
+    ?LOG_ERROR("Process ~p failed abnormally, attempting to restart~n", [Pid]),
     thor_socket:start_link(self(), State#state.listen_socket, State#state.port),
     {noreply, State};
 
-handle_info(_Info, State) ->
-    io:format("info = ~p~n", [_Info]),
+handle_info(Info, State) ->
+    ?LOG_DEBUG("Info request: ~p~n", [Info]),
     {noreply, State}.
 
 terminate(Reason, State) ->

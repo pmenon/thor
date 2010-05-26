@@ -11,14 +11,12 @@
 %% Function: create_channel(Connection, Request)
 %% Description: Creates a bank account for the person with name Name
 %%--------------------------------------------------------------------
-
 handle_request(Connection, "/thor/get_messages", #req{body = Body} = Request) ->
     Headers = ["Server: Thor Web Server!"],
     {User, Message} = get_data(binary_to_list(Body)),
     Response = thor_api:wait_for_messages(User),
     HttpResp = case Response of
         {msgs, Messages} when is_list(Messages) ->
-            io:format("wtf?~n", []),
             {200, Headers, list_to_binary(thor_json:encode( {array, Messages} ))};
         timeout ->
             {200, Headers, list_to_binary(thor_json:encode({struct, [ {response, "success"}]}))}; 
@@ -84,15 +82,14 @@ handle_request(Connection, _Path, Request) ->
 %% Description: Creates a bank account for the person with name Name
 %%--------------------------------------------------------------------
 handle_request(Connection, Request) ->
-    io:format("~p handling request for path ~p~n", [self(), Request#req.uri]),
     {PathType, Path} = Request#req.uri,
     case thor_websockets:is_websocket_request(Request) of 
         false ->
+            ?LOG_DEBUG("Handling request for path ~p~n", [Request#req.uri]),
             handle_request(Connection, Path, Request);
         true ->
-            Callback = fun(S) ->
-                           websocket_handler(S)
-                       end,
+            ?LOG_DEBUG("Received WebSocket data~n", []),
+            Callback = fun(S) -> websocket_handler(S) end,
             thor_websockets:init(Connection, Request, [ {callback, Callback}, 
                                                         {active, false},
                                                         {owner_pid, self()} ])
@@ -115,18 +112,17 @@ websocket_handler0(WebSocket, User) ->
     receive
         {tcp, WebSocket, FramedData} ->
             Data = thor_websockets:unpack(FramedData),
-            io:format("got data: ~p~n", [Data]),
+            ?LOG_DEBUG("Websocket got data: ~p~n", [Data]),
             handle_websocket_request(WebSocket, Data);
         {tcp_closed, WebSocket} ->
-            io:format("closed websocket~n", []),
+            ?LOG_DEBUG("Closing websocket~n", []),
             thor_api:remove_observer(User, self()),
             exit(normal);
         {msgs, Message} ->
-            io:format("msgs~n", []),
             Json = thor_json:encode({array, Message}),
             thor_websockets:send_data(WebSocket, Json);
         _ ->
-            io:format("received unknownd data~n", [])
+            ?LOG_WARN("Websocket ~p received unknown data~n", [User])
     end,
     websocket_handler0(WebSocket, User).
 

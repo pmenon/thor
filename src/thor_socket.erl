@@ -20,7 +20,6 @@ init({ListenPid, ListenSocket, ListenPort}) ->
     ?LOG_INFO("Spawned thread to accept request on port ~p~n", [ListenPort]),
     case catch gen_tcp:accept(ListenSocket) of
         {ok, Socket} ->
-            %%io:format("Got a new request, handling it ...~n", []),
             ?LOG_INFO("Got a new request, handling it ...~n", []),
             
             %% tell the listener to spawn a new acceptor while we handle
@@ -94,7 +93,7 @@ keep_alive({1,0}, "Keep-Alive") -> keep_alive;
 keep_alive({1,0}, _) -> close;
 keep_alive({0,9}, _) -> close;
 keep_alive(Vsn, KA) ->
-    io:format("Got ~p~n", [{Vsn, KA}]),
+    ?LOG_WARN("Got wierd connection type: ~p~n", [{Vsn, KA}]),
     close.
 
 
@@ -188,7 +187,7 @@ call_mfa(F, A, Connection, Request) ->
                            Body],
                     send(Connection, Res);
                 _ ->
-                    io:format("sdfsdfsd~n", [])
+                    ?LOG_WARN("Response was not a 200!~n", [])
             end;
         {error, not_found} ->
             send(Connection, ?not_found_404)

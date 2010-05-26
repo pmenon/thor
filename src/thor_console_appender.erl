@@ -1,4 +1,4 @@
--module(thor_console_logger).
+-module(thor_console_appender).
 
 -behaviour(gen_event).
 
@@ -6,10 +6,18 @@
 
 -export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
 
--record(console_appender, {}).
+-record(console_appender, {format,
+                           level}).
 
-init(InitArgs) ->
-    {ok, #console_appender{}}.    
+init({conf, ConfArgs}) ->
+    Args = lists:foldl(fun(T, Acc) ->
+                           [proplists:get_value(T, ConfArgs) | Acc]
+                       end, [], [format, level]),
+    init(list_to_tuple(Args));
+init({Level}) ->
+    init({Level, ""});
+init({Level, Format}) ->
+    {ok, #console_appender{format = Format, level = Level}}.
 
 handle_event({log, Log}, State) ->
     Time = format_time(Log#log.time),

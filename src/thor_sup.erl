@@ -17,11 +17,11 @@ init(DefaultConfigFiles) ->
 
     %%Config = {thor_config, {thor_config, start_link, [ConfigFile]},
     %%          permanent, 2000, worker, [thor_config]},
-    Log = {thor_log, {thor_log, start_link, [?DEFAULT_LOGGER]},
+    {ok, LogConf} = thor_config:get(log),
+    Log = {thor_log, {thor_log, start_link, [LogConf]},
             permanent, 2000, worker, [thor_log]},
 
     {ok, Port} = thor_config:get(port),
-    io:format("port = ~p~n", [Port]),
     HttpServer = {thor_server, {thor_server, start_link, [Port]},
               permanent, 2000, worker, [thor_server]},
 
