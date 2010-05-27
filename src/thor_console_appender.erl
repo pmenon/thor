@@ -20,11 +20,12 @@ init({Level, Format}) ->
     {ok, #console_appender{format = Format, level = Level}}.
 
 handle_event({log, Log}, State) ->
-    Time = format_time(Log#log.time),
-    Level = string:to_upper(atom_to_list(Log#log.level)),
-    Msg = io_lib:format(Log#log.msg, Log#log.args),
-    io:format("[~s] [~s] ~p ~s", [Time, Level, Log#log.pid, Msg]),
-    {ok, State};
+    NewState = 
+    case thor_utils:should_log(Log#log.level, State#console_appender.level) of
+        true -> do_log(Log, State);
+        false -> State
+    end,
+    {ok, NewState};
 
 handle_event(_Event, State) ->
     io:format("Unknown event~n", []),
@@ -53,4 +54,12 @@ format_time(Time) ->
                                                  end
                                             end, [Y, Mon, D, H, Min, S]),
     FY++"-"++FMon++"-"++FD++" "++FH++":"++FMin++":"++FS.
+
+do_log(Log, State) ->
+    Time = format_time(Log#log.time),
+    Level = string:to_upper(atom_to_list(Log#log.level)),
+    Msg = io_lib:format(Log#log.msg, Log#log.args),
+    io:format("[~s] [~s] ~p ~s", [Time, Level, Log#log.pid, Msg]),
+    State.
+
 

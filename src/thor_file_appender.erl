@@ -7,6 +7,7 @@
 -export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
 
 -record(conf, {fd,
+               level,
                format,
                dir,
                name,
@@ -17,19 +18,21 @@
 init({conf, ConfArgs}) ->
     Args = lists:foldl(fun(X, Acc) ->
                            [proplists:get_value(X, ConfArgs) | Acc]
-                       end, [], [format, dir, log_name, suffix, rotate, size]),
+                       end, [], [level, format, dir, log_name, suffix, rotate, size]),
     init(list_to_tuple(lists:reverse(Args)));
-init({Format, Dir, LogName, LogSuffix, Rotate, Size}) ->
+init({Level, Format, Dir, LogName, LogSuffix, Rotate, Size}) ->
     File = Dir ++ "/" ++ LogName ++ "." ++ LogSuffix,
-    io:format("File = ~p~n", [File]),
+    io:format("Logging to file ~p~n", [File]),
     {ok, Fd} = file:open(File, [write, raw, binary]),
-    io:format("opened file~n", []),
-    {ok, #conf{fd = Fd, format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, size = Size}}. 
+    {ok, #conf{fd = Fd, level = Level, format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, size = Size}}. 
 
 handle_event({log, Log}, State) ->
-    io:format("Logged to file~n", []),
-    file:write(State#conf.fd, Log#log.msg),
-    {ok, State};
+    NewState =
+    case thor_utils:should_log(Log#log.level, State#conf.level) of
+        true -> do_log(Log, State);
+        false -> State
+    end,
+    {ok, NewState};
 
 handle_event(_Event, State) ->
     io:format("Unknown event~n", []),
@@ -48,4 +51,6 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-
+do_log(Log, State) ->
+    file:write(State#conf.fd, Log#log.msg ++ "\n"),
+    State.
