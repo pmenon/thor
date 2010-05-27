@@ -65,7 +65,7 @@ should_rotate(Conf) ->
     end.
 
 do_log(Log, Conf) ->
-    Msg = Log#log.msg ++ "\n",
+    Msg = thor_utils:format_log(Log),
     Size = string:len(Msg) + Conf#file_appender.counter,
     file:write(Conf#file_appender.fd, Msg),
     Conf#file_appender{counter = Size}.
@@ -77,7 +77,7 @@ do_rotate(#file_appender{fd = Fd, dir = Dir, name = Name, suffix = Suffix,  rota
    {ok, Fd2} = file:open(File ++ "." ++ Suffix),
    {ok, Conf#file_appender{fd = Fd2, counter = 0}}.
 
-rotate_file(File, Num, Suffix) when index > 0 ->
+rotate_file(File, Num, Suffix) when Num > 0 ->
     file:rename(File ++ "_" ++ integer_to_list(Num) ++ "." ++ Suffix,
                 File ++ "_" ++ integer_to_list(Num + 1) ++ "." ++ Suffix),
     rotate_file(File, Num - 1, Suffix);

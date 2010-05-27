@@ -44,22 +44,12 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-format_time(Time) ->
-    {{Y, Mon, D}, {H, Min, S}} = Time,
-    [FY, FMon, FD, FH, FMin, FS] = lists:map(fun(X) ->
-                                                 X1 = integer_to_list(X),
-                                                 case string:len(X1) of
-                                                    1 -> "0" ++ X1;
-                                                    _ -> X1
-                                                 end
-                                            end, [Y, Mon, D, H, Min, S]),
-    FY++"-"++FMon++"-"++FD++" "++FH++":"++FMin++":"++FS.
-
 do_log(Log, State) ->
-    Time = format_time(Log#log.time),
-    Level = string:to_upper(atom_to_list(Log#log.level)),
-    Msg = io_lib:format(Log#log.msg, Log#log.args),
-    io:format("[~s] [~s] ~p ~s", [Time, Level, Log#log.pid, Msg]),
+    %%Time = format_time(Log#log.time),
+    %%Level = string:to_upper(atom_to_list(Log#log.level)),
+    %%Msg = io_lib:format(Log#log.msg, Log#log.args),
+    %io:format("[~s] [~s] ~p ~s", [Time, Level, Log#log.pid, Msg]),
+    io:format(thor_utils:format_log(Log)),
     State.
 
 
