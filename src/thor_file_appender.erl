@@ -35,7 +35,7 @@ handle_event({log, Log}, Conf) ->
         false -> Conf
     end,
     NewState2 = 
-    case should_rotate(Conf) of
+    case should_rotate(NewState) of
         true -> do_rotate(Conf);
         false -> NewState
     end,
@@ -74,13 +74,13 @@ do_rotate(#file_appender{fd = Fd, dir = Dir, name = Name, suffix = Suffix,  rota
    file:close(Fd),
    File = Dir ++ "/" ++ Name,
    rotate_file(File, Num - 1, Suffix),
-   {ok, Fd2} = file:open(File ++ "." ++ Suffix),
-   {ok, Conf#file_appender{fd = Fd2, counter = 0}}.
+   {ok, Fd2} = file:open(File ++ "." ++ Suffix, [write, raw, binary]),
+   Conf#file_appender{fd = Fd2, counter = 0}.
 
 rotate_file(File, Num, Suffix) when Num > 0 ->
     file:rename(File ++ "_" ++ integer_to_list(Num) ++ "." ++ Suffix,
                 File ++ "_" ++ integer_to_list(Num + 1) ++ "." ++ Suffix),
     rotate_file(File, Num - 1, Suffix);
-rotate_file(File, Num, Suffix) ->
+rotate_file(File, _Num, Suffix) ->
     file:rename(File ++ "." ++ Suffix,
                 File ++ "_1." ++ Suffix).
