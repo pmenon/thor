@@ -26,7 +26,10 @@ init({Level, Format, Dir, LogName, LogSuffix, {Rotate, RotateNum}, Size}) ->
     File = Dir ++ "/" ++ LogName ++ "." ++ LogSuffix,
     io:format("Logging to file ~p~n", [File]),
     {ok, Fd} = file:open(File, [write, raw, binary]),
-    {ok, #file_appender{fd = Fd, level = Level, format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, rotate_num = RotateNum, size = Size, counter = 0}}. 
+    {ok, #file_appender{fd = Fd, level = Level, format = Format, dir = Dir, name = LogName, suffix = LogSuffix, rotate = Rotate, rotate_num = RotateNum, size = Size, counter = 0}};
+init({file, ConfFile}) ->
+    {ok, Terms} = file:consult(ConfFile),
+    init({conf, Terms}).
 
 handle_event({log, Log}, Conf) ->
     NewState =
